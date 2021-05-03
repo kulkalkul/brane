@@ -1,0 +1,25 @@
+[package]
+name = "test-db"
+version = "0.1.0"
+authors = ["Bora ÜLKER <yokunjon@gmail.com>"]
+exclude = ["artifacts.json", "index.node"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+rocksdb = "0.15.0"
+bson = "1.2.2"
+
+[dependencies.neon]
+version = "0.8.0"
+default-features = false
+features = ["default-panic-hook", "napi-6", "try-catch-api", "event-queue-api"]
+
+[dependencies.uuid]
+version = "0.8.2"
+features = ["v4"]
+
