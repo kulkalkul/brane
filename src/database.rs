@@ -1,6 +1,5 @@
 use neon::prelude::*;
 use crate::internal::database::{ Database, Collection };
-use crate::internal::document::{ DocumentWithID, Document };
 use crate::Cx;
 
 pub fn database_new(mut cx: Cx) -> JsResult<JsBox<Database>> {

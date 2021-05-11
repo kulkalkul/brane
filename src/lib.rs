@@ -1,10 +1,6 @@
 mod internal {
     pub mod database;
     pub mod byte_helper;
-    pub mod object_helper;
-    pub mod document;
-    pub mod document_field;
-    pub mod document_array;
 }
 mod database;
 
