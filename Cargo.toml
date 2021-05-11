@@ -15,7 +15,7 @@ rocksdb = "0.15.0"
 bson = "1.2.2"
 
 [dependencies.neon]
-version = "0.8.0"
+version = "0.8.1"
 default-features = false
 features = ["default-panic-hook", "napi-6", "try-catch-api", "event-queue-api"]
 

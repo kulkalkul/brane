@@ -1,9 +1,14 @@
 mod internal {
     pub mod database;
-    pub mod parser;
     pub mod byte_helper;
+    pub mod object_helper;
+    pub mod document;
+    pub mod document_field;
+    pub mod document_array;
 }
 mod database;
+
+pub type Cx<'a> = FunctionContext<'a>;
 
 use neon::prelude::*;
 use database::*;
