@@ -12,7 +12,6 @@ crate-type = ["cdylib"]
 
 [dependencies]
 rocksdb = "0.15.0"
-bson = "1.2.2"
 
 [dependencies.neon]
 version = "0.8.1"
