@@ -9,14 +9,40 @@ pub struct JSONParser {
 }
 
 impl JSONParser {
-    pub fn new(json: Vec<u8>) -> JSONParser {
+    pub fn new(json: String) -> JSONParser {
         let capacity = json.len();
         JSONParser {
             index: 0,
-            original: json,
+            original: json.into_bytes(),
             parsed: Vec::with_capacity(capacity),
             stack: Vec::new(),
         }
+    }
+    pub fn new_with_id(id: String, json: String) -> JSONParser {
+        let capacity = json.len() + id.len();
+
+        let mut parser = JSONParser {
+            index: 0, // Skip first object literal
+            original: json.into_bytes(),
+            parsed: Vec::with_capacity(capacity),
+            stack: Vec::new(),
+        };
+
+        parser.write_object_begin();
+        parser.skip_by(1);
+
+        let key = "_id".as_bytes();
+        parser.write(tson_delimiters::STRING);
+        parser.write_length(key.len() as u32);
+        parser.write_slice(key);
+        parser.write_pair();
+
+        parser.write(tson_delimiters::STRING);
+        parser.write_length(id.len() as u32);
+        parser.write_slice(id.as_bytes());
+        parser.write_separator();
+
+        parser
     }
 }
 

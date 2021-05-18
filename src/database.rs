@@ -1,7 +1,9 @@
 use neon::prelude::*;
 use crate::internal::database::{ Database, Collection };
 use crate::Cx;
-use crate::internal::parser::Extender;
+use crate::internal::parser::json_parser::JSONParser;
+use crate::internal::parser::parser::Parser;
+use crate::internal::parser::tson_parser::TSONParser;
 
 pub fn database_new(mut cx: Cx) -> JsResult<JsBox<Database>> {
     let path = cx.argument::<JsString>(0)?.value(&mut cx);
@@ -36,12 +38,13 @@ type Buffer<'a, 'b> = neon::borrow::Ref<'a, BinaryData<'b>>;
 
 pub fn collection_insert(mut cx: Cx) -> JsResult<JsUndefined> {
     let collection = cx.argument::<JsBox<Collection>>(0)?;
-    let buf = cx.argument::<JsArrayBuffer>(1)?;
+    let id = cx.argument::<JsString>(1)?.value(&mut cx);
+    let json = cx.argument::<JsString>(2)?.value(&mut cx);
 
-    let vec = cx.borrow(&buf, |buf: Buffer| buf.as_slice::<u8>().to_vec());
+    let parser = JSONParser::new_with_id(id.clone(), json);
+    let tson = parser.parse();
 
-    let extender = Extender::new(vec);
-    extender.extend();
+    collection.insert(id.as_bytes(), tson);
 
     Ok(cx.undefined())
 }

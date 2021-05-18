@@ -2,6 +2,8 @@ use neon::prelude::*;
 use rocksdb::{DB, ReadOptions, IteratorMode, Direction, WriteBatch};
 use std::sync::Arc;
 use crate::internal::byte_helper::concat_bytes;
+use crate::internal::parser::tson_parser::TSONParser;
+use crate::internal::parser::parser::Parser;
 
 pub mod controls {
     pub const NS_BEGIN:        &str = "\u{10F41F}";
@@ -39,11 +41,10 @@ impl Database {
         let iter = self.db.iterator_opt(IteratorMode::From(start.as_bytes(), Direction::Forward), options);
 
         for (key, value) in iter {
-            println!(
-                "{:?} = {:?}",
-                String::from_utf8(key.into_vec()).unwrap(),
-                String::from_utf8(value.into_vec()).unwrap()
-            );
+            let key = String::from_utf8(key.into_vec()).unwrap();
+            let value = TSONParser::new(value.into_vec()).parse();
+            let value = String::from_utf8(value).unwrap();
+            println!("{:?} = {:?}", key, value);
         }
     }
 }
