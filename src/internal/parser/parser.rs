@@ -4,7 +4,8 @@ pub enum Loop {
 }
 
 pub trait Parser {
-    fn parse(mut self) -> Vec<u8> where Self: Sized {
+    type Parsed;
+    fn parse(mut self) -> Self::Parsed where Self: Sized {
         let mut keep = Loop::Continue;
 
         while let Loop::Continue = keep {
@@ -27,6 +28,6 @@ pub trait Parser {
 
     fn get_index(&self) -> usize;
     fn get_original_len(&self) -> usize;
-    fn get_parsed(self) -> Vec<u8>;
+    fn get_parsed(self) -> Self::Parsed;
     fn parse_next(&mut self);
 }

@@ -1,63 +1,62 @@
 use crate::internal::parser::parser::{Parser, Loop};
 use crate::internal::parser::delimiters::{json_delimiters, tson_delimiters};
+use crate::internal::parser::value_cursor::ValueCursor;
+use crate::internal::parser::parsed::Parsed;
 
 pub struct JSONParser {
-    index: usize,
-    original: Vec<u8>,
-    parsed: Vec<u8>,
+    cursor: ValueCursor,
+    parsed: Parsed,
     stack: Vec<usize>,
 }
 
 impl JSONParser {
     pub fn new(json: String) -> JSONParser {
-        let capacity = json.len();
-        JSONParser {
-            index: 0,
-            original: json.into_bytes(),
-            parsed: Vec::with_capacity(capacity),
-            stack: Vec::new(),
-        }
+        let len = json.len();
+        Self::with_capacity(json, len)
     }
     pub fn new_with_id(id: String, json: String) -> JSONParser {
         let capacity = json.len() + id.len();
 
-        let mut parser = JSONParser {
-            index: 0, // Skip first object literal
-            original: json.into_bytes(),
-            parsed: Vec::with_capacity(capacity),
-            stack: Vec::new(),
-        };
+        let mut parser = Self::with_capacity(json, capacity);
 
         parser.write_object_begin();
-        parser.skip_by(1);
+        parser.cursor.skip_by(1);
 
         let key = "_id".as_bytes();
-        parser.write(tson_delimiters::STRING);
+        parser.parsed.write(tson_delimiters::STRING);
         parser.write_length(key.len() as u32);
-        parser.write_slice(key);
+        parser.parsed.write_slice(key);
         parser.write_pair();
 
-        parser.write(tson_delimiters::STRING);
+        parser.parsed.write(tson_delimiters::STRING);
         parser.write_length(id.len() as u32);
-        parser.write_slice(id.as_bytes());
+        parser.parsed.write_slice(id.as_bytes());
         parser.write_separator();
 
         parser
     }
+    fn with_capacity(json: String, capacity: usize) -> JSONParser {
+        JSONParser {
+            cursor: ValueCursor::new(json.into_bytes()),
+            parsed: Parsed::with_capacity(capacity),
+            stack: Vec::new(),
+        }
+    }
 }
 
 impl Parser for JSONParser {
+    type Parsed = Vec<u8>;
     fn get_index(&self) -> usize {
-        self.index
+        self.cursor.get_index()
     }
     fn get_original_len(&self) -> usize {
-        self.original.len()
+        self.cursor.get_value().len()
     }
     fn get_parsed(self) -> Vec<u8> {
-        self.parsed
+        self.parsed.get_parsed()
     }
     fn parse_next(&mut self) {
-        match self.read_next() {
+        match self.cursor.read_next() {
             json_delimiters::OBJECT_BEGIN => self.write_object_begin(),
             json_delimiters::OBJECT_END => self.write_object_end(),
             json_delimiters::ARRAY_BEGIN => self.write_array_begin(),
@@ -74,124 +73,95 @@ impl Parser for JSONParser {
 }
 
 impl JSONParser {
-    fn skip_next(&mut self) {
-        self.index += 1;
-    }
-    fn skip_by(&mut self, n: usize) {
-        self.index += n;
-    }
-    fn read_next(&mut self) -> u8 {
-        let i = self.index;
-        self.index += 1;
-        self.original[i]
-    }
-    fn write(&mut self, val: u8) {
-        self.parsed.push(val);
-    }
-    fn write_slice(&mut self, slice: &[u8]) {
-        self.parsed.extend_from_slice(slice);
-    }
     fn write_length(&mut self, length: u32) {
-        self.write_slice(&length.to_le_bytes());
-    }
-    fn rewrite_slice(&mut self, start: usize, slice: &[u8]) {
-        for (i, val) in slice.iter().enumerate() {
-            self.parsed[start + i] = *val;
-        }
+        self.parsed.write_slice(&length.to_le_bytes());
     }
     fn begin_collection(&mut self) {
         self.write_length(0);
-        self.stack.push(self.parsed.len() - 1);
+        self.stack.push(self.parsed.get_parsed_len() - 1);
     }
     fn end_collection(&mut self) {
         let start = self.stack.pop().unwrap();
-        let len = (self.parsed.len() - start) as u32;
-        self.rewrite_slice(start - 3, &len.to_le_bytes());
+        let len = (self.parsed.get_parsed_len() - start) as u32;
+        self.parsed.rewrite_slice(start - 3, &len.to_le_bytes());
     }
 }
 
 impl JSONParser {
     fn write_object_begin(&mut self) {
-        self.write(tson_delimiters::OBJECT_BEGIN);
+        self.parsed.write(tson_delimiters::OBJECT_BEGIN);
         self.begin_collection();
     }
     fn write_object_end(&mut self) {
-        self.write(tson_delimiters::OBJECT_END);
+        self.parsed.write(tson_delimiters::OBJECT_END);
         self.end_collection();
     }
     fn write_array_begin(&mut self) {
-        self.write(tson_delimiters::ARRAY_BEGIN);
+        self.parsed.write(tson_delimiters::ARRAY_BEGIN);
         self.begin_collection();
     }
     fn write_array_end(&mut self) {
-        self.write(tson_delimiters::ARRAY_END);
+        self.parsed.write(tson_delimiters::ARRAY_END);
         self.end_collection();
     }
     fn write_string(&mut self) {
-        self.write(tson_delimiters::STRING);
+        self.parsed.write(tson_delimiters::STRING);
         let string = self.read_string();
         let length = string.len() as u32;
         self.write_length(length);
-        self.write_slice(string.as_slice());
+        self.parsed.write_slice(string.as_slice());
     }
     fn write_true(&mut self) {
-        self.write(tson_delimiters::TRUE);
-        self.skip_by(3);
+        self.parsed.write(tson_delimiters::TRUE);
+        self.cursor.skip_by(3);
     }
     fn write_false(&mut self) {
-        self.write(tson_delimiters::FALSE);
-        self.skip_by(4);
+        self.parsed.write(tson_delimiters::FALSE);
+        self.cursor.skip_by(4);
     }
     fn write_null(&mut self) {
-        self.write(tson_delimiters::NULL);
-        self.skip_by(3);
+        self.parsed.write(tson_delimiters::NULL);
+        self.cursor.skip_by(3);
     }
     fn write_pair(&mut self) {
-        self.write(tson_delimiters::PAIR);
+        self.parsed.write(tson_delimiters::PAIR);
     }
     fn write_separator(&mut self) {
-        self.write(tson_delimiters::SEPARATOR);
+        self.parsed.write(tson_delimiters::SEPARATOR);
     }
     fn write_number(&mut self) {
-        self.index -= 1;
+        self.cursor.skip_reverse_by(1);
         let number = self.read_number();
         let number: f64 = String::from_utf8(number.to_vec()).unwrap().parse().unwrap();
-        self.write(tson_delimiters::NUMBER);
-        self.write_slice(&number.to_le_bytes());
+        self.parsed.write(tson_delimiters::NUMBER);
+        self.parsed.write_slice(&number.to_le_bytes());
     }
 }
 
 impl JSONParser {
     fn read_number(&mut self) -> &[u8] {
-        let i = self.index;
+        let prev = self.cursor.get_index();
 
         loop {
-            match self.read_next() {
-                json_delimiters::SEPARATOR => {
-                    self.index -= 1;
-                    break;
-                },
-                json_delimiters::OBJECT_END => {
-                    self.index -= 1;
-                    break;
-                },
-                json_delimiters::ARRAY_END => {
-                    self.index -= 1;
-                    break;
-                },
+            match self.cursor.read_next() {
+                json_delimiters::SEPARATOR => break,
+                json_delimiters::OBJECT_END => break,
+                json_delimiters::ARRAY_END => break,
                 _ => continue,
             }
         }
 
-        &self.original[i..self.index]
+        self.cursor.skip_reverse_by(1);
+        let current = self.cursor.get_index();
+        self.cursor.read_range(prev..current)
     }
     fn read_string(& mut self) -> Vec<u8> {
-        let i = self.index;
+        let prev = self.cursor.get_index();
 
         loop {
-            let val = self.read_next();
+            let val = self.cursor.read_next();
             if val == b'\\' {
-                self.skip_next();
+                self.cursor.skip_next();
                 continue;
             }
             if val == json_delimiters::STRING {
@@ -199,6 +169,7 @@ impl JSONParser {
             }
         }
 
-        self.original[i..self.index - 1].to_vec()
+        let current = self.cursor.get_index();
+        self.cursor.read_range(prev..current - 1).to_vec()
     }
 }
