@@ -1,10 +1,10 @@
 pub mod internal;
-pub mod database;
+pub mod callers;
 
 pub type Cx<'a> = FunctionContext<'a>;
 
 use neon::prelude::*;
-use database::*;
+use callers::*;
 
 #[neon::main]
 fn main(mut cx: ModuleContext) -> NeonResult<()> {
