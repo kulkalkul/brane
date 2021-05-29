@@ -20,6 +20,9 @@ impl Parsed {
     pub fn get_parsed(self) -> Vec<u8> {
         self.parsed
     }
+    pub fn get_parsed_clone(&self) -> Vec<u8> {
+        self.parsed.clone()
+    }
     pub fn get_parsed_len(&self) -> usize {
         self.parsed.len()
     }
