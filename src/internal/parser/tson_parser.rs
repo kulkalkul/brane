@@ -1,4 +1,4 @@
-use crate::internal::parser::parser::{Parser, Loop};
+use crate::internal::parser::parser::{Parser};
 use crate::internal::parser::delimiters::{tson_delimiters, json_delimiters};
 use crate::internal::parser::value_cursor::ValueCursor;
 use crate::internal::parser::parsed::Parsed;
@@ -26,7 +26,7 @@ impl Parser for TSONParser {
     }
 
     fn get_original_len(&self) -> usize {
-        self.cursor.get_value().len()
+        self.cursor.get_value_ref().len()
     }
 
     fn get_parsed(self) -> Vec<u8> {

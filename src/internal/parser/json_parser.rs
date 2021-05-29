@@ -1,4 +1,4 @@
-use crate::internal::parser::parser::{Parser, Loop};
+use crate::internal::parser::parser::{Parser};
 use crate::internal::parser::delimiters::{json_delimiters, tson_delimiters};
 use crate::internal::parser::value_cursor::ValueCursor;
 use crate::internal::parser::parsed::Parsed;
@@ -50,7 +50,7 @@ impl Parser for JSONParser {
         self.cursor.get_index()
     }
     fn get_original_len(&self) -> usize {
-        self.cursor.get_value().len()
+        self.cursor.get_value_ref().len()
     }
     fn get_parsed(self) -> Vec<u8> {
         self.parsed.get_parsed()
@@ -78,12 +78,12 @@ impl JSONParser {
     }
     fn begin_collection(&mut self) {
         self.write_length(0);
-        self.stack.push(self.parsed.get_parsed_len() - 1);
+        self.stack.push(self.parsed.get_parsed_len());
     }
     fn end_collection(&mut self) {
         let start = self.stack.pop().unwrap();
         let len = (self.parsed.get_parsed_len() - start) as u32;
-        self.parsed.rewrite_slice(start - 3, &len.to_le_bytes());
+        self.parsed.rewrite_slice(start - 4, &len.to_le_bytes());
     }
 }
 
@@ -93,16 +93,16 @@ impl JSONParser {
         self.begin_collection();
     }
     fn write_object_end(&mut self) {
-        self.parsed.write(tson_delimiters::OBJECT_END);
         self.end_collection();
+        self.parsed.write(tson_delimiters::OBJECT_END);
     }
     fn write_array_begin(&mut self) {
         self.parsed.write(tson_delimiters::ARRAY_BEGIN);
         self.begin_collection();
     }
     fn write_array_end(&mut self) {
-        self.parsed.write(tson_delimiters::ARRAY_END);
         self.end_collection();
+        self.parsed.write(tson_delimiters::ARRAY_END);
     }
     fn write_string(&mut self) {
         self.parsed.write(tson_delimiters::STRING);

@@ -24,10 +24,16 @@ impl ValueCursor {
     pub fn skip_reverse_by(&mut self, n: usize) {
         self.index -= n;
     }
+    pub fn skip_rest(&mut self) {
+        self.index = self.value.len();
+    }
     pub fn read_next(&mut self) -> u8 {
         let i = self.index;
         self.index += 1;
         self.value[i]
+    }
+    pub fn peek(&self) -> u8 {
+        self.value[self.index]
     }
     pub fn read_by(&mut self, n: usize) -> &[u8] {
         let i = self.index;
@@ -40,7 +46,10 @@ impl ValueCursor {
     pub fn get_index(&self) -> usize {
         self.index
     }
-    pub fn get_value(&self) -> &[u8] {
+    pub fn get_value_ref(&self) -> &[u8] {
         self.value.as_slice()
+    }
+    pub fn get_value(self) -> Vec<u8> {
+        self.value
     }
 }
