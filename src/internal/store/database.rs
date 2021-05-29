@@ -27,25 +27,6 @@ impl Database {
     pub fn collection(&self, name: String) -> Collection {
         Collection::new(Arc::clone(&self.db), name)
     }
-    pub fn debug(&self) {
-        let mut options = ReadOptions::default();
-
-        let mut start = String::from("documents");
-        let mut end = String::from("documents");
-
-        start.push_str(key_controls::NS_BEGIN);
-        end.push_str(key_controls::NS_END);
-
-        options.set_iterate_upper_bound(end.into_bytes());
-        let iter = self.db.iterator_opt(IteratorMode::From(start.as_bytes(), Direction::Forward), options);
-
-        for (key, value) in iter {
-            let key = String::from_utf8(key.into_vec()).unwrap();
-            let value = TSONParser::new(value.into_vec()).parse();
-            let value = String::from_utf8(value).unwrap();
-            println!("{:?} = {:?}", key, value);
-        }
-    }
 }
 
 impl Finalize for Database {}

@@ -17,10 +17,3 @@ pub fn database_collection(mut cx: Cx) -> JsResult<JsBox<Collection>> {
 
     Ok(cx.boxed(collection))
 }
-pub fn database_debug(mut cx: Cx) -> JsResult<JsUndefined> {
-    let db = cx.argument::<JsBox<Database>>(0)?;
-
-    db.debug();
-
-    Ok(cx.undefined())
-}

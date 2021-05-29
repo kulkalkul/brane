@@ -3,7 +3,8 @@ use crate::internal::parser::query_parser::{QueryParser, LogicalOperation};
 
 pub enum Query {
     All,
-    By(LogicalOperation)
+    Id(String),
+    By(LogicalOperation),
 }
 
 impl Query {

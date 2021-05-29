@@ -1,3 +1,6 @@
 pub mod store;
-pub mod byte_helper;
 pub mod parser;
+pub mod query;
+pub mod utils;
+
+pub use utils::byte_helper;
